@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResiPro Direct Print</title>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 15px; text-align: center; }
+        .card { background: #fff; max-width: 400px; margin: auto; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); padding: 20px; }
+        .header { background: #ff4500; color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-cetak { background: #ff4500; color: white; border: none; width: 100%; padding: 18px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        iframe { display: none; } /* Untuk memicu print tanpa terlihat */
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">🖨️ RESI PRO: CETAK MASSAL</div>
+    
+    <input type="text" id="toko" placeholder="Nama Brand/Toko Kamu">
+    <input type="file" id="logo" accept="image/*">
+    <p style="font-size: 11px; color: #666; text-align: left;">Pilih Semua Resi (PDF):</p>
+    <input type="file" id="pdf" accept="application/pdf" multiple>
+    
+    <button class="btn-cetak" onclick="prosesDanCetak()">PROSES & CETAK SEKARANG</button>
+    
+    <div id="status" style="margin-top: 15px; font-size: 12px; color: #ff4500;"></div>
+</div>
+
+<iframe id="printFrame"></iframe>
+
+<script>
+    async function prosesDanCetak() {
+        const pdfIn = document.getElementById('pdf').files;
+        const toko = document.getElementById('toko').value || "BRAND SAYA";
+        const status = document.getElementById('status');
+        
+        if (pdfIn.length === 0) return alert("Pilih resi dulu, Bos!");
+
+        status.innerText = "Sedang meracik resi branded...";
+
+        try {
+            const { PDFDocument, rgb } = PDFLib;
+            const pdfHasil = await PDFDocument.create();
+            const W_KERTAS = 283.46; // 100mm
+            const H_KERTAS = 425.20; // 150mm
+
+            // Logo Setup
+            let imgLogo = null;
+            const logoFile = document.getElementById('logo').files[0];
+            if (logoFile) {
+                const b = await logoFile.arrayBuffer();
+                imgLogo = await pdfHasil.embedPng(b).catch(() => pdfHasil.embedJpg(b));
+            }
+
+            for (const f of pdfIn) {
+                const bytes = await f.arrayBuffer();
+                const pdfLama = await PDFDocument.load(bytes);
+                const [halEmbed] = await pdfHasil.embedPdf(pdfLama, [0]);
+                const halBaru = pdfHasil.addPage([W_KERTAS, H_KERTAS]);
+
+                // Gambar Resi (Skala Paksa agar Pas)
+                halBaru.drawPage(halEmbed, {
+                    x: 0, y: 50, width: W_KERTAS, height: 375 
+                });
+
+                // Tambah Logo & Nama Brand
+                if (imgLogo) halBaru.drawImage(imgLogo, { x: 10, y: 15, width: 25, height: 25 });
+                halBaru.drawText(toko, { x: 40, y: 23, size: 10, color: rgb(0,0,0) });
+                
+                // Catatan Unboxing
+                halBaru.drawText("Catatan: WAJIB VIDEO UNBOXING UNTUK KLAIM!", { 
+                    x: 10, y: 8, size: 8, color: rgb(0.8, 0, 0) 
+                });
+            }
+
+            const res = await pdfHasil.save();
+            const blob = new Blob([res], {type: 'application/pdf'});
+            const url = URL.createObjectURL(blob);
+
+            // JURUS CETAK: Masukkan ke iframe dan panggil print()
+            const frame = document.getElementById('printFrame');
+            frame.src = url;
+            frame.onload = function() {
+                status.innerText = "Membuka jendela printer...";
+                frame.contentWindow.print();
+            };
+
+        } catch (e) {
+            status.innerText = "Error: " + e.message;
+        }
+    }
+</script>
+</body>
+</html>
