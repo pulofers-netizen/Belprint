@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResiPro Multi-Size</title>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <style>
+        :root { --orange: #ff4500; }
+        body { font-family: sans-serif; background: #f4f7f9; padding: 15px; margin: 0; }
+        .card { background: #fff; max-width: 400px; margin: auto; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: var(--orange); color: white; padding: 20px; text-align: center; font-weight: bold; }
+        .padd { padding: 20px; }
+        label { font-size: 12px; font-weight: bold; color: #555; display: block; margin: 10px 0 5px; text-align: left; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { background: var(--orange); color: white; border: none; width: 100%; padding: 18px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        #status { margin-top: 15px; font-size: 12px; color: var(--orange); min-height: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">🖨️ RESI PRO MULTI-SIZE</div>
+    <div class="padd">
+        <label>UKURAN KERTAS PRINTER</label>
+        <select id="size">
+            <option value="283.46">100mm (Label Thermal Besar)</option>
+            <option value="226.77">80mm (Printer Kasir Sedang)</option>
+            <option value="164.41">58mm (Printer Bluetooth Kecil)</option>
+        </select>
+
+        <label>NAMA TOKO</label>
+        <input type="text" id="toko" placeholder="Nama Toko Anda">
+
+        <label>LOGO (PNG/JPG)</label>
+        <input type="file" id="logo" accept="image/*">
+
+        <label>PILIH RESI PDF</label>
+        <input type="file" id="pdf" accept="application/pdf" multiple>
+
+        <button onclick="prosesMultiSize()">GABUNG & CETAK</button>
+        <div id="status">Siap memproses...</div>
+    </div>
+</div>
+
+<script>
+    async function prosesMultiSize() {
+        const pdfIn = document.getElementById('pdf').files;
+        const toko = document.getElementById('toko').value || "TOKO SAYA";
+        const targetW = parseFloat(document.getElementById('size').value);
+        const status = document.getElementById('status');
+        
+        if (pdfIn.length === 0) return alert("Pilih resi dulu!");
+        status.innerText = "Menyesuaikan ukuran kertas...";
+
+        try {
+            const { PDFDocument, rgb } = PDFLib;
+            const pdfHasil = await PDFDocument.create();
+            
+            // Tinggi kertas kita buat fleksibel (standar label 150mm = 425pt)
+            // Khusus 58mm & 80mm, biasanya kertasnya gulungan (long), tapi kita set 150mm dulu.
+            const targetH = 425.20;
+
+            let imgLogo = null;
+            const logoFile = document.getElementById('logo').files[0];
+            if (logoFile) {
+                const b = await logoFile.arrayBuffer();
+                imgLogo = await pdfHasil.embedPng(b).catch(() => pdfHasil.embedJpg(b));
+            }
+
+            for (const f of pdfIn) {
+                const bytes = await f.arrayBuffer();
+                const pdfLama = await PDFDocument.load(bytes);
+                const [halEmbed] = await pdfHasil.embedPdf(pdfLama, [0]);
+                const page = pdfHasil.addPage([targetW, targetH]);
+
+                // HITUNG SKALA AGAR PAS DI LEBAR KERTAS YANG DIPILIH
+                const skala = targetW / halEmbed.width;
+                const drawnHeight = halEmbed.height * skala;
+
+                // Gambar Resi di ATAS
+                page.drawPage(halEmbed, {
+                    x: 0,
+                    y: targetH - drawnHeight, 
+                    width: targetW,
+                    height: drawnHeight
+                });
+
+                // AREA BRANDING DI BAWAH (Jika masih ada sisa ruang)
+                const yBrand = 15; 
+                if (imgLogo) {
+                    page.drawImage(imgLogo, { x: 5, y: yBrand, width: 20, height: 20 });
+                }
+                page.drawText(toko, { x: imgLogo ? 30 : 5, y: yBrand + 8, size: targetW < 200 ? 8 : 12, color: rgb(0, 0, 0) });
+                page.drawText("WAJIB VIDEO UNBOXING!", { x: 5, y: yBrand - 10, size: targetW < 200 ? 6 : 8, color: rgb(0.8, 0, 0) });
+            }
+
+            const res = await pdfHasil.save();
+            const url = URL.createObjectURL(new Blob([res], {type: 'application/pdf'}));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `RESI_${targetW < 200 ? '58mm' : targetW < 250 ? '80mm' : '100mm'}.pdf`;
+            a.click();
+            status.innerText = "Selesai! Cek folder Download.";
+
+        } catch (e) {
+            status.innerText = "Error: " + e.message;
+            console.error(e);
+        }
+    }
+</script>
+</body>
+</html>
