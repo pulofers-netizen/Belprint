@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResiPro V7 - Anti Hilang</title>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 15px; text-align: center; }
+        .card { background: #fff; max-width: 400px; margin: auto; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); padding: 20px; }
+        .header { background: #ff4500; color: white; padding: 15px; border-radius: 10px; font-weight: bold; margin-bottom: 20px; }
+        select, input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { background: #ff4500; color: white; border: none; width: 100%; padding: 18px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        #log { margin-top: 15px; font-size: 11px; color: #ff4500; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">🖨️ RESI PRO V7 (ANTI-HILANG)</div>
+    <select id="size">
+        <option value="283.46">Kertas 100mm</option>
+        <option value="226.77">Kertas 80mm</option>
+        <option value="164.41">Kertas 58mm</option>
+    </select>
+    <input type="text" id="toko" placeholder="Nama Toko (Cimol Bang Bel)">
+    <input type="file" id="logo" accept="image/*">
+    <input type="file" id="pdf" accept="application/pdf" multiple>
+    <button onclick="prosesV7()">GABUNG & CETAK</button>
+    <div id="log">Status: Siap...</div>
+</div>
+
+<script>
+    async function prosesV7() {
+        const pdfFiles = document.getElementById('pdf').files;
+        const tokoName = document.getElementById('toko').value || "TOKO SAYA";
+        const targetW = parseFloat(document.getElementById('size').value);
+        const log = document.getElementById('log');
+
+        if (pdfFiles.length === 0) return alert("Pilih file PDF dulu!");
+        log.innerText = "Memproses resi...";
+
+        try {
+            const { PDFDocument, rgb, StandardFonts } = PDFLib;
+            const pdfOut = await PDFDocument.create();
+            const fontBold = await pdfOut.embedFont(StandardFonts.HelveticaBold);
+            
+            // Tinggi standar label thermal (150mm)
+            const targetH = 425.20; 
+
+            let logoImg = null;
+            if (document.getElementById('logo').files[0]) {
+                const b = await document.getElementById('logo').files[0].arrayBuffer();
+                logoImg = await pdfOut.embedPng(b).catch(() => pdfOut.embedJpg(b));
+            }
+
+            for (const f of pdfFiles) {
+                const bytes = await f.arrayBuffer();
+                const pdfIn = await PDFDocument.load(bytes);
+                const [halEmbed] = await pdfOut.embedPdf(pdfIn, [0]);
+                const page = pdfOut.addPage([targetW, targetH]);
+
+                // Kunci Rahasia: Kita tidak memotong, tapi mengecilkan seluruh halaman A4 
+                // ke lebar printer (100/80/58mm) lalu kita geser ke ATAS.
+                const skala = targetW / halEmbed.width;
+                const tinggiResiBaru = halEmbed.height * skala;
+
+                page.drawPage(halEmbed, {
+                    x: 0,
+                    y: targetH - (tinggiResiBaru * 0.55), // Digeser ke atas agar pas di tengah label
+                    width: targetW,
+                    height: tinggiResiBaru
+                });
+
+                // Tentukan titik aman di bawah resi untuk branding
+                const yBranding = 65;
+
+                // 1. Logo
+                if (logoImg) {
+                    page.drawImage(logoImg, { x: 10, y: yBranding, width: 25, height: 25 });
+                }
+
+                // 2. Nama Toko
+                page.drawText(tokoName, {
+                    x: logoImg ? 40 : 10,
+                    y: yBranding + 8,
+                    size: 14,
+                    font: fontBold,
+                    color: rgb(0, 0, 0)
+                });
+
+                // 3. WAJIB VIDEO UNBOXING (Dengan BINGKAI MERAH)
+                const txt = "WAJIB VIDEO UNBOXING UNTUK KLAIM!";
+                const fontSize = 10;
+                const txtWidth = fontBold.widthOfTextAtSize(txt, fontSize);
+
+                // Gambar Bingkai Merah
+                page.drawRectangle({
+                    x: 8,
+                    y: yBranding - 25,
+                    width: txtWidth + 10,
+                    height: fontSize + 10,
+                    borderColor: rgb(0.9, 0, 0),
+                    borderWidth: 2,
+                    color: rgb(1, 1, 1),
+                });
+
+                // Tulisan Merah dalam bingkai
+                page.drawText(txt, {
+                    x: 13,
+                    y: yBranding - 18,
+                    size: fontSize,
+                    font: fontBold,
+                    color: rgb(0.8, 0, 0)
+                });
+            }
+
+            const res = await pdfOut.save();
+            const url = URL.createObjectURL(new Blob([res], {type: 'application/pdf'}));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "RESI_V7_FINAL.pdf";
+            a.click();
+            log.innerText = "BERHASIL! Silakan cek hasil download.";
+        } catch (e) {
+            log.innerText = "Error: " + e.message;
+        }
+    }
+</script>
+</body>
+</html>
