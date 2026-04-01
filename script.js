@@ -1,133 +1,140 @@
-// Variabel global
+// Variabel Global
 let dataPesanan = [];
-let tipeResiAktif = 'manual';
+let totalCetakHariIni = 0;
+const MAX_CETAK_GRATIS = 10;
+let isProVersion = false; // Ganti jadi true jika pengguna sudah Pro
 
-// Pilih tipe resi
-function pilihTipe(tipe) {
-    tipeResiAktif = tipe;
-    document.querySelectorAll('.tipe-resi .btn').forEach(btn => btn.classList.remove('active'));
+// Inisialisasi Aplikasi
+window.onload = function() {
+    // Cek jumlah cetak hari ini dari localStorage
+    const today = new Date().toISOString().split('T')[0];
+    const savedData = localStorage.getItem('printBellProData');
+    if (savedData) {
+        const data = JSON.parse(savedData);
+        if (data.tanggal === today) {
+            totalCetakHariIni = data.jumlahCetak;
+        }
+    }
+
+    // Tampilkan notifikasi jumlah cetak
+    showNotification(`Sisa kuota cetak hari ini: ${MAX_CETAK_GRATIS - totalCetakHariIni} (Gratis)`, 'info');
+
+    // Cek tema aplikasi
+    const tema = localStorage.getItem('appTheme') || 'light';
+    document.body.classList.toggle('dark', tema === 'dark');
+    document.getElementById('app-theme').value = tema;
+};
+
+// Navigasi Tab
+function openTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(tabName).classList.remove('hidden');
     event.target.classList.add('active');
-    
-    document.getElementById('form-manual').classList.add('hidden');
-    document.getElementById('form-marketplace').classList.add('hidden');
-    document.getElementById('preview-section').classList.add('hidden');
-    
-    document.getElementById(`form-${tipe}`).classList.remove('hidden');
 }
 
-// Baca file CSV marketplace
-function bacaCSV(input) {
+// Fungsi Notifikasi
+function showNotification(message, type) {
+    const notif = document.createElement('div');
+    notif.className = `notification notif-${type}`;
+    notif.textContent = message;
+    document.body.appendChild(notif);
+    notif.style.display = 'block';
+    setTimeout(() => {
+        notif.style.opacity = '0';
+        setTimeout(() => notif.remove(), 300);
+    }, 3000);
+}
+
+// === FITUR RESI MARKETPLACE ===
+// Load Data Marketplace
+function loadMPData(input) {
     if (input.files.length === 0) return;
-    
+
+    // Cek ekstensi file (Excel hanya untuk Pro)
+    const fileName = input.files[0].name;
+    if (fileName.endsWith('.xlsx') && !isProVersion) {
+        showNotification('Dukungan file Excel hanya untuk versi Pro', 'error');
+        return;
+    }
+
+    // Baca file CSV
     Papa.parse(input.files[0], {
         header: true,
-        dynamicTyping: true,
         complete: function(results) {
             dataPesanan = results.data;
-            let select = document.getElementById('pilih-pesanan');
+            const select = document.getElementById('mp-pesanan');
+            const bulkList = document.getElementById('bulk-pesanan-list');
             select.innerHTML = '';
-            
+            bulkList.innerHTML = '';
+
+            // Isi dropdown dan list cetak masal
             dataPesanan.forEach((pesanan, index) => {
-                let option = document.createElement('option');
+                // Dropdown single
+                const option = document.createElement('option');
                 option.value = index;
                 option.text = `${pesanan.penerima} - ${pesanan.no_resi}`;
                 select.appendChild(option);
+
+                // List bulk print
+                const bulkItem = document.createElement('div');
+                bulkItem.className = 'bulk-item';
+                bulkItem.innerHTML = `
+                    <input type="checkbox" class="bulk-checkbox" value="${index}">
+                    <span>${pesanan.no_resi} - ${pesanan.penerima}</span>
+                `;
+                bulkList.appendChild(bulkItem);
             });
-            
-            document.getElementById('data-csv').classList.remove('hidden');
+
+            document.getElementById('mp-data-section').classList.remove('hidden');
+            // Tampilkan fitur cetak masal jika Pro
+            if (isProVersion) {
+                document.getElementById('mp-bulk-section').classList.remove('hidden');
+                document.querySelectorAll('.pro-feature').forEach(el => el.classList.remove('hidden'));
+            }
+            loadMPLabelPreview();
         }
     });
 }
 
-// Preview label
-function previewLabel() {
-    let data = {};
-    
-    if (tipeResiAktif === 'manual') {
-        data = {
-            pengirim: document.getElementById('pengirim').value,
-            penerima: document.getElementById('penerima').value,
-            alamat: document.getElementById('alamat').value,
-            no_resi: document.getElementById('no-resi').value,
-            marketplace: document.getElementById('marketplace').value || 'Resi Manual'
-        };
-    } else {
-        let index = document.getElementById('pilih-pesanan').value;
-        data = dataPesanan[index];
-    }
-    
+// Load Preview Resi Marketplace
+function loadMPLabelPreview() {
+    const index = document.getElementById('mp-pesanan').value;
+    const data = dataPesanan[index];
+    const paperSize = document.querySelector('input[name="paper-size"]:checked').value;
+
+    // Set ukuran label
+    const label = document.getElementById('mp-label');
+    label.className = `label mp-label size-${paperSize}`;
+
     // Isi data ke preview
-    document.getElementById('label-marketplace').textContent = data.marketplace;
-    document.getElementById('label-no-resi').textContent = data.no_resi;
-    document.getElementById('label-pengirim').textContent = data.pengirim;
-    document.getElementById('label-penerima').textContent = data.penerima;
-    document.getElementById('label-alamat').textContent = data.alamat;
-    
+    document.getElementById('mp-mp-name').textContent = data.marketplace;
+    document.getElementById('mp-no-resi').textContent = data.no_resi;
+    document.getElementById('mp-pengirim').textContent = data.pengirim;
+    document.getElementById('mp-penerima').textContent = data.penerima;
+    document.getElementById('mp-hp').textContent = data.hp_penerima;
+    document.getElementById('mp-alamat').textContent = data.alamat;
+    document.getElementById('mp-note-text').textContent = document.getElementById('mp-note').value;
+
+    // Tampilkan logo toko (jika ada dan Pro)
+    const storeLogo = document.getElementById('mp-store-logo');
+    storeLogo.src = localStorage.getItem('savedLogo') || 'https://via.placeholder.com/60';
+    storeLogo.style.display = isProVersion ? 'block' : 'none';
+
+    // Crop elemen jika Pro
+    const cropElements = document.querySelectorAll('input[name="crop-element"]:checked');
+    cropElements.forEach(el => {
+        if (el.value === 'logo_mp') document.querySelector('.mp-info span').style.display = 'none';
+        if (el.value === 'detail_kurir') document.getElementById('mp-crop-area').style.display = 'none';
+    });
+
     // Generate barcode
-    JsBarcode("#barcode", data.no_resi, {
-        format: "CODE128",
-        displayValue: true
-    });
-    
-    // Generate QR Code
-    QRCode.toCanvas(document.getElementById('qrcode'), data.no_resi, function (error) {
-        if (error) console.error(error)
-    });
-    
-    // Tampilkan preview
-    document.getElementById('preview-section').classList.remove('hidden');
+    JsBarcode("#mp-barcode", data.no_resi, { format: "CODE128", displayValue: true });
+    document.getElementById('mp-preview-section').classList.remove('hidden');
 }
 
-// Cetak label
-function printLabel() {
-    let printContent = document.getElementById('label-resi').outerHTML;
-    let originalContent = document.body.innerHTML;
-    
-    document.body.innerHTML = printContent;
-    window.print();
-    document.body.innerHTML = originalContent;
-    location.reload(); // Refresh agar tombol bisa digunakan lagi
-}
-
-// Simpan sebagai PDF
-function simpanPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: [80, 120] // Ukuran label thermal umum
-    });
-    
-    let data = {};
-    if (tipeResiAktif === 'manual') {
-        data = {
-            pengirim: document.getElementById('pengirim').value,
-            penerima: document.getElementById('penerima').value,
-            alamat: document.getElementById('alamat').value,
-            no_resi: document.getElementById('no-resi').value,
-            marketplace: document.getElementById('marketplace').value || 'Resi Manual'
-        };
-    } else {
-        let index = document.getElementById('pilih-pesanan').value;
-        data = dataPesanan[index];
-    }
-    
-    // Tambah konten ke PDF
-    doc.setFontSize(12);
-    doc.text(data.marketplace, 10, 10);
-    doc.setFontSize(10);
-    doc.text(`No Resi: ${data.no_resi}`, 10, 18);
-    doc.line(10, 22, 70, 22); // Garis pemisah
-    
-    doc.text(`Pengirim: ${data.pengirim}`, 10, 30);
-    doc.text(`Penerima: ${data.penerima}`, 10, 38);
-    doc.text(`Alamat: ${data.alamat}`, 10, 46, { maxWidth: 60 });
-    
-    // Tambah barcode
-    JsBarcode("#barcode", data.no_resi, { format: "CODE128" });
-    const barcodeSVG = document.getElementById('barcode').outerHTML;
-    doc.svg(barcodeSVG, { x: 10, y: 60, width: 60, height: 20 });
-    
-    // Simpan PDF
-    doc.save(`Label-Resi-${data.no_resi}.pdf`);
-}
+// Cetak Single Resi Marketplace
+function printMPLabel() {
+    // Cek kuota jika bukan Pro
+    if (!isProVersion) {
+        if (totalCetakHariIni >= MAX_CETAK_G
