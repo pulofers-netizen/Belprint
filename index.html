@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Bell Pro | Cetak Label Resi Profesional</title>
+    <!-- Library Eksternal -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <!-- Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <img src="https://via.placeholder.com/40" alt="Print Bell Pro Logo" class="app-logo">
+            <h1>Print Bell Pro</h1>
+            <div class="pro-badge">
+                <span class="badge">PRO</span>
+                <button class="btn-upgrade" onclick="showUpgrade()">Upgrade Sekarang</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Navigasi Utama -->
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="openTab('marketplace')">
+                <i class="fas fa-shopping-bag"></i> Resi Marketplace
+            </button>
+            <button class="tab-btn" onclick="openTab('manual')">
+                <i class="fas fa-pencil-alt"></i> Resi Manual
+            </button>
+            <button class="tab-btn" onclick="openTab('settings')">
+                <i class="fas fa-cog"></i> Pengaturan
+            </button>
+        </div>
+
+        <!-- Tab Resi Marketplace -->
+        <div id="marketplace" class="tab-content active">
+            <div class="section-header">
+                <h2>Resi Marketplace</h2>
+                <p>Unggah data dan sesuaikan label sesuai kebutuhan</p>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-file-csv"></i> Unggah File CSV/Excel</label>
+                <input type="file" id="mp-file" accept=".csv,.xlsx" onchange="loadMPData(this)">
+                <small class="help-text">File harus memiliki kolom: pengirim, penerima, hp_penerima, alamat, no_resi, marketplace</small>
+            </div>
+
+            <div id="mp-data-section" class="hidden">
+                <div class="form-group">
+                    <label><i class="fas fa-list"></i> Pilih Pesanan</label>
+                    <select id="mp-pesanan" onchange="loadMPLabelPreview()"></select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-print"></i> Ukuran Kertas Thermal</label>
+                    <div class="size-options">
+                        <label class="size-label">
+                            <input type="radio" name="paper-size" value="58" checked> 58mm
+                        </label>
+                        <label class="size-label">
+                            <input type="radio" name="paper-size" value="80"> 80mm
+                        </label>
+                        <label class="size-label">
+                            <input type="radio" name="paper-size" value="100"> 100mm
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-comment"></i> Catatan Tambahan (Otomatis di Bawah Resi)</label>
+                    <input type="text" id="mp-note" placeholder="Contoh: Wajib Video Unboxing Sebelum Membuka Paket" value="Wajib Video Unboxing">
+                </div>
+
+                <div class="form-group pro-feature hidden">
+                    <label><i class="fas fa-crop-alt"></i> Crop Otomatis Elemen Resi</label>
+                    <div class="crop-options">
+                        <label class="crop-label">
+                            <input type="checkbox" name="crop-element" value="logo_mp"> Sembunyikan Logo Marketplace
+                        </label>
+                        <label class="crop-label">
+                            <input type="checkbox" name="crop-element" value="detail_kurir"> Sembunyikan Detail Kurir
+                        </label>
+                    </div>
+                    <small class="pro-tag">Fitur Pro</small>
+                </div>
+            </div>
+
+            <!-- Preview Label Marketplace -->
+            <div id="mp-preview-section" class="hidden">
+                <h3>Preview Label</h3>
+                <div class="label-wrapper" id="mp-label-wrapper">
+                    <div class="label mp-label" id="mp-label">
+                        <div class="label-top">
+                            <img src="" alt="Logo Toko" class="store-logo" id="mp-store-logo">
+                            <div class="mp-info">
+                                <span id="mp-mp-name"></span>
+                                <h4>No Resi: <span id="mp-no-resi"></span></h4>
+                            </div>
+                        </div>
+                        <div class="label-middle">
+                            <p><strong>Pengirim:</strong> <span id="mp-pengirim"></span></p>
+                            <p><strong>Penerima:</strong> <span id="mp-penerima"></span> | <span id="mp-hp"></span></p>
+                            <p><strong>Alamat:</strong> <span id="mp-alamat"></span></p>
+                            <div id="mp-crop-area" class="crop-area">
+                                <p><em>Detail Kurir: [Akan disembunyikan jika fitur Pro aktif]</em></p>
+                            </div>
+                        </div>
+                        <div class="label-bottom">
+                            <svg id="mp-barcode"></svg>
+                            <p class="note-text" id="mp-note-text"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="printMPLabel()">
+                        <i class="fas fa-print"></i> Cetak Label
+                    </button>
+                    <button class="btn btn-secondary pro-feature hidden" onclick="saveMPTemplate()">
+                        <i class="fas fa-save"></i> Simpan Template
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Resi Manual -->
+        <div id="manual" class="tab-content hidden">
+            <div class="section-header">
+                <h2>Resi Manual</h2>
+                <p>Buat dan sesuaikan label resi dari nol</p>
+            </div>
+
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label><i class="fas fa-store"></i> Nama Toko/Pengirim</label>
+                        <input type="text" id="m-pengirim" placeholder="Nama Toko Anda">
+                    </div>
+                    <div class="form-group pro-feature hidden">
+                        <label><i class="fas fa-image"></i> Logo Toko</label>
+                        <input type="file" id="m-logo" accept="image/*" onchange="previewMStoreLogo(this)">
+                        <div id="m-logo-preview" class="logo-preview hidden"></div>
+                        <small class="pro-tag">Fitur Pro</small>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <label><i class="fas fa-user"></i> Nama Penerima</label>
+                        <input type="text" id="m-penerima" placeholder="Nama Penerima">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-phone"></i> No HP/WA Penerima</label>
+                        <input type="text" id="m-hp" placeholder="Contoh: 0812xxxxxx">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-map-marker-alt"></i> Alamat Penerima</label>
+                <textarea id="m-alamat" placeholder="Alamat Lengkap Penerima"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-barcode"></i> Nomor Resi</label>
+                <input type="text" id="m-no-resi" placeholder="Contoh: PB-PRO-2026-0001">
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-comment"></i> Catatan Tambahan</label>
+                <input type="text" id="m-note" placeholder="Contoh: Wajib Video Unboxing" value="Wajib Video Unboxing">
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-print"></i> Ukuran Kertas Thermal</label>
+                <div class="size-options">
+                    <label class="size-label">
+                        <input type="radio" name="m-paper-size" value="58" checked> 58mm
+                    </label>
+                    <label class="size-label">
+                        <input type="radio" name="m-paper-size" value="80"> 80mm
+                    </label>
+                    <label class="size-label">
+                        <input type="radio" name="m-paper-size" value="100"> 100mm
+                    </label>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="previewMLabel()">
+                <i class="fas fa-eye"></i> Preview & Cetak
+            </button>
+
+            <!-- Preview Label Manual -->
+            <div id="m-preview-section" class="hidden">
+                <h3>Preview Label</h3>
+                <div class="label-wrapper" id="m-label-wrapper">
+                    <div class="label m-label" id="m-label">
+                        <div class="label-top">
+                            <img src="" alt="Logo Toko" class="store-logo" id="m-store-logo">
+                            <h4>No Resi: <span id="m-label-no-resi"></span></h4>
+                        </div>
+                        <div class="label-middle">
+                            <p><strong>Toko/Pengirim:</strong> <span id="m-label-pengirim"></span></p>
+                            <p><strong>Penerima:</strong> <span id="m-label-penerima"></span> | <span id="m-label-hp"></span></p>
+                            <p><strong>Alamat:</strong> <span id="m-label-alamat"></span></p>
+                        </div>
+                        <div class="label-bottom">
+                            <svg id="m-barcode"></svg>
+                            <p class="note-text" id="m-note-text"></p>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="printMLabel()">
+                    <i class="fas fa-print"></i> Cetak Label
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Pengaturan -->
+        <div id="settings" class="tab-content hidden">
+            <div class="section-header">
+                <h2>Pengaturan Aplikasi</h2>
+                <p>Konfigurasi tampilan dan fitur Print Bell Pro</p>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-palette"></i> Tema Aplikasi</label>
+                <select id="app-theme">
+                    <option value="light">Terang</option>
+                    <option value="dark">Gelap</option>
+                </select>
+            </div>
+
+            <div class="form-group pro-feature hidden">
+                <label><i class="fas fa-images"></i> Simpan Logo Toko Secara Permanen</label>
+                <input type="file" id="save-logo" accept="image/*">
+                <small class="pro-tag">Fitur Pro</small>
+            </div>
+
+            <div class="upgrade-card">
+                <h3><i class="fas fa-star"></i> Naik ke Versi Pro</h3>
+                <p>Dapatkan semua fitur premium:</p>
+                <ul>
+                    <li>Crop otomatis elemen resi marketplace</li>
+                    <li>Upload dan simpan logo toko</li>
+                    <li>Simpan template label favorit</li>
+                    <li>Dukungan file Excel (.xlsx)</li>
+                    <li>Tidak ada watermark</li>
+                </ul>
+                <button class="btn btn-upgrade" onclick="showUpgrade()">Beli Versi Pro Sekarang</button>
+            </div>
+        </div>
+
+        <!-- Modal Upgrade -->
+        <div id="upgrade-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-modal" onclick="closeModal()">&times;</span>
+                <h2>Print Bell Pro - Versi Premium</h2>
+                <p>Harga: Rp 150.000 / Tahun</p>
+                <p>Atau Rp 20.000 / Bulan</p>
+                <button class="btn btn-primary">Beli Sekarang</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <p>&copy; 2026 Print Bell Pro - Semua Hak Dilindungi</p>
+        <div class="footer-links">
+            <a href="#">Syarat Penggunaan</a>
+            <a href="#">Kebijakan Privasi</a>
+            <a href="#">Hubungi Kami</a>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
