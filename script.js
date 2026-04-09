@@ -1,75 +1,51 @@
-let activeCharacteristic;
-
 function sync() {
     document.getElementById('prevNama').innerText = document.getElementById('nama').value || "-";
     document.getElementById('prevTelp').innerText = document.getElementById('telp').value || "-";
     document.getElementById('prevAlamat').innerText = document.getElementById('alamat').value || "-";
 }
 
-function updatePaperSize() {
-    document.getElementById('printArea').className = document.getElementById('sizeSelect').value;
-}
-
 async function pasteAndParse() {
     try {
         const text = await navigator.clipboard.readText();
+        const area = document.getElementById('printArea');
+        const labelHead = document.querySelector('.label-header');
         
-        // Logika Auto-Cut & Parser untuk Shopee, TikTok, Lazada
-        // Mencari pola Nama, Telp, dan Alamat
-        let lines = text.split('\n').map(l => l.trim()).filter(l => l !== "");
-        
-        // Contoh pembersihan sederhana:
-        if (text.includes("Penerima:")) {
-            document.getElementById('nama').value = lines[lines.indexOf("Penerima:") + 1] || "";
-            document.getElementById('telp').value = lines.find(l => /\d{10,}/.test(l)) || "";
-            document.getElementById('alamat').value = lines.slice(4, 7).join(" ");
-        } else {
-            // Manual parsing jika format tidak baku
-            document.getElementById('nama').value = lines[0] || "";
-            document.getElementById('telp').value = lines[1] || "";
-            document.getElementById('alamat').value = lines.slice(2).join(" ");
+        let nama = "", telp = "", alamat = "", mp = "STANDARD";
+
+        // 1. DETEKSI TEMPLATE MARKETPLACE
+        if (text.includes("Shopee") || text.includes("No. Pesanan")) {
+            mp = "SHOPEE";
+            area.className = "w100 theme-shopee"; // Auto set ke 100mm untuk resi MP
+            labelHead.innerText = "SHOPEE ORDER";
+            // Logic ambil data Shopee
+            nama = text.match(/Penerima:\s*(.*)/)?.[1] || "";
+            telp = text.match(/(?:Telp:|No. Telp:)\s*(\d+)/)?.[1] || "";
+            alamat = text.split(/Alamat:|Alamat Pengiriman:/)[1]?.split("Kec.")[0] || "";
+        } 
+        else if (text.includes("TikTok") || text.includes("Order ID")) {
+            mp = "TIKTOK";
+            area.className = "w100 theme-tiktok";
+            labelHead.innerText = "TIKTOK SHOP";
+            nama = text.match(/Penerima:\s*(.*)/)?.[1] || "";
+            telp = text.match(/(\d{10,14})/)?.[1] || "";
+            alamat = text.split(telp)[1]?.trim().substring(0, 150) || "";
         }
+        else {
+            area.className = "w58 theme-standard";
+            labelHead.innerText = "CUSTOM LABEL";
+            // Fallback parsing sederhana
+            const lines = text.split('\n').filter(l => l.trim() !== "");
+            nama = lines[0]; telp = lines[1]; alamat = lines.slice(2).join(" ");
+        }
+
+        // 2. INPUT KE FORM
+        document.getElementById('nama').value = nama.trim();
+        document.getElementById('telp').value = telp.trim();
+        document.getElementById('alamat').value = alamat.trim();
+        document.getElementById('sizeSelect').value = area.classList.contains('w100') ? 'w100' : 'w58';
+        
         sync();
     } catch (err) {
-        alert("Klik 'Izinkan' untuk mengakses Clipboard!");
+        alert("Gagal membaca clipboard. Pastikan izin aktif.");
     }
-}
-
-async function connectBT() {
-    try {
-        const device = await navigator.bluetooth.requestDevice({
-            filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
-            optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
-        });
-        const server = await device.gatt.connect();
-        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
-        activeCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-        alert("Printer Siap!");
-    } catch (e) {
-        alert("Koneksi Gagal: " + e);
-    }
-}
-
-async function printLabel() {
-    if (!activeCharacteristic) return alert("Hubungkan Bluetooth dulu!");
-
-    const nama = document.getElementById('prevNama').innerText;
-    const telp = document.getElementById('prevTelp').innerText;
-    const alamat = document.getElementById('prevAlamat').innerText;
-
-    // Perintah ESC/POS untuk hemat kertas
-    const encoder = new TextEncoder();
-    const data = encoder.encode(
-        "\x1B\x40" +          // Reset printer
-        "\x1B\x61\x01" +      // Center align
-        "LABEL PENGIRIMAN\n" +
-        "----------------\n" +
-        "\x1B\x61\x00" +      // Left align
-        "Penerima: " + nama + "\n" +
-        "Telp: " + telp + "\n" +
-        "Alamat:\n" + alamat + "\n" +
-        "\n\n\x1B\x69"        // Feed sedikit & Potong (Jika printer dukung autocut)
-    );
-
-    await activeCharacteristic.writeValue(data);
 }
