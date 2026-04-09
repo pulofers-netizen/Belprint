@@ -3,42 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartPrint - Marketplace Label</title>
+    <title>SmartPrint Hub</title>
+    <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>SmartPrint.</h1>
-            <p>Thermal Printing Solution</p>
+            <p>Solusi Cetak Label Marketplace</p>
         </header>
 
         <button class="btn btn-paste" onclick="pasteAndParse()">
             <span>📋</span> Tempel Data Marketplace
         </button>
 
-        <div id="printArea" class="w58">
-            <div class="label-header">Resi Pengiriman</div>
-            <div class="label-body">
-                <p style="font-size: 0.7rem; margin: 0;">PENERIMA:</p>
-                <b id="prevNama" style="font-size: 1.1rem;">-</b>
-                <p id="prevTelp" style="margin: 5px 0;">-</p>
-                <hr style="border: 0; border-top: 1px dashed #ccc;">
-                <p id="prevAlamat" style="font-size: 0.9rem; line-height: 1.4;">-</p>
+        <div id="printArea" class="w58 theme-standard">
+            <div class="label-header">Preview Label</div>
+            <div id="labelContent" class="label-body">
+                <p style="font-size: 0.7rem; margin:0;">PENERIMA:</p>
+                <b id="prevNama">-</b>
+                <p id="prevTelp">-</p>
+                <hr style="border:1px dashed #ccc">
+                <p id="prevAlamat" class="address-box">-</p>
             </div>
+            <canvas id="pdfCanvas" style="display:none;"></canvas>
         </div>
 
         <div class="card">
             <select id="sizeSelect" onchange="updatePaperSize()">
                 <option value="w58">Standard 58mm</option>
                 <option value="w80">Medium 80mm</option>
-                <option value="w100">Large 100mm</option>
+                <option value="w100">Marketplace 100mm</option>
             </select>
-            
             <input type="text" id="nama" placeholder="Nama Lengkap" oninput="sync()">
-            <input type="text" id="telp" placeholder="Nomor WhatsApp" oninput="sync()">
-            <textarea id="alamat" rows="3" placeholder="Alamat Detail" oninput="sync()"></textarea>
+            <input type="text" id="telp" placeholder="Nomor HP" oninput="sync()">
+            <textarea id="alamat" rows="3" placeholder="Alamat Lengkap" oninput="sync()"></textarea>
         </div>
 
         <div class="grid-cols">
@@ -47,10 +49,9 @@
         </div>
         
         <button class="btn btn-print" onclick="printLabel()">
-            <span>⚡</span> CETAK LABEL
+            <span>⚡</span> CETAK SEKARANG
         </button>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
