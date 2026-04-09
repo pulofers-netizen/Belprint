@@ -1,57 +1,53 @@
 # 🖨️ SmartPrint Hub
-**Aplikasi Cetak Label Thermal Berbasis Web untuk Marketplace (Shopee, TikTok, Lazada)**
+**Aplikasi Cetak Label Thermal PWA - Khusus Marketplace (Shopee, TikTok, Lazada)**
 
-![GitHub License](https://img.shields.io/badge/license-MIT-blue)
-![Version](https://img.shields.io/badge/version-1.0.0-green)
-![Platform](https://img.shields.io/badge/platform-Mobile%20|%20Desktop-orange)
+![Version](https://img.shields.io/badge/version-2.0.0-blueviolet)
+![Platform](https://img.shields.io/badge/platform-Android%20|%20iOS%20|%20Desktop-orange)
+![PWA](https://img.shields.io/badge/PWA-Ready-success)
 
-SmartPrint Hub adalah solusi praktis untuk mencetak resi pengiriman tanpa harus download PDF. Cukup salin data dari marketplace, tempel, dan cetak langsung ke printer Bluetooth atau USB kamu.
-
----
-
-## ✨ Fitur Unggulan
-
-* **🚀 Marketplace Auto-Parser:** Deteksi otomatis Nama, No HP, dan Alamat dari teks yang kamu copy di Shopee, TikTok Shop, atau Lazada.
-* **📏 Multi-Size Support:** Tersedia template untuk ukuran kertas **58mm, 80mm, dan 100mm** (A6).
-* **♻️ Anti-Mubazir:** Layout dioptimalkan agar tidak menyisakan ruang kosong berlebih di kertas label.
-* **🎨 UI Kekinian:** Tampilan modern dengan konsep *Glassmorphism* yang ramah pengguna HP.
-* **🔌 Konektivitas Luas:** Mendukung printer Bluetooth (BLE) dan USB/OTG langsung dari browser.
+SmartPrint Hub adalah aplikasi berbasis web (PWA) yang dirancang untuk mempercepat proses cetak resi pengiriman tanpa perlu download PDF. Fokus pada kecepatan, kemudahan penggunaan di HP, dan penghematan kertas label.
 
 ---
 
-## 🛠️ Teknologi yang Digunakan
+## 🚀 Fitur Utama (V2.0)
 
-* **HTML5 & CSS3** (Custom Glassmorphism Design)
-* **Vanilla JavaScript** (Web Bluetooth & Web Serial API)
-* **Tailwind CSS** (Optional Utility)
-* **GitHub Pages** (Hosting Gratis & Aman)
-
----
-
-## 📲 Cara Penggunaan di HP
-
-1.  **Akses Aplikasi:** Buka link GitHub Pages kamu di Google Chrome (Android).
-2.  **Koneksi Printer:** * Nyalakan Bluetooth Printer.
-    * Klik tombol **🌐 Bluetooth** di aplikasi dan pilih printer kamu.
-3.  **Ambil Data dari Marketplace:**
-    * Buka aplikasi Shopee/TikTok/Lazada.
-    * Salin (copy) informasi pengiriman pada pesanan.
-    * Kembali ke SmartPrint, klik **📋 Tempel Data Marketplace**.
-4.  **Cetak:**
-    * Pilih ukuran kertas yang sesuai.
-    * Klik **⚡ CETAK LABEL**.
+* **📱 Installable (PWA):** Bisa diinstal di layar utama HP tanpa melalui Play Store. Muncul di menu "Share" Android.
+* **✂️ Smart Auto-Crop:** Menghilangkan area putih kosong pada resi PDF marketplace agar pas di kertas thermal 58/80/100mm.
+* **📋 Marketplace Parser:** Cukup salin informasi pengiriman, aplikasi otomatis memisahkan Nama, No HP, dan Alamat.
+* **♻️ Ultra Paper Saver:** Menggunakan perintah ESC/POS `line-spacing 0` untuk memastikan tidak ada kertas yang terbuang sia-sia.
+* **✨ Modern UI:** Desain *Glassmorphism* yang nyaman dipandang dan tombol besar yang ramah jempol.
 
 ---
 
-## ⚠️ Catatan Penting
+## 🛠️ Persiapan & Instalasi
 
-* **Browser:** Harus menggunakan **Google Chrome** karena fitur Bluetooth/USB hanya didukung penuh oleh mesin Chromium.
-* **Keamanan:** Aplikasi ini berjalan 100% di sisi klien (browser kamu). Tidak ada data pribadi yang dikirim ke server mana pun.
+1.  **Hosting:** Gunakan GitHub Pages (Akses via HTTPS wajib untuk fitur Bluetooth).
+2.  **Instal di HP:**
+    * Buka URL GitHub Pages di **Google Chrome Android**.
+    * Klik menu titik tiga (⋮) di pojok kanan atas.
+    * Pilih **"Instal Aplikasi"** atau **"Tambahkan ke Layar Utama"**.
+3.  **Izin Browser:** Pastikan memberikan izin Bluetooth dan Clipboard saat diminta.
 
 ---
 
-## 📄 Lisensi
-Proyek ini dilisensikan di bawah MIT License - bebas digunakan dan dikembangkan kembali.
+## 📖 Cara Penggunaan
+
+### Metode 1: Copy-Paste (Cepat)
+1.  Buka aplikasi Marketplace (Shopee/TikTok/Lazada).
+2.  Salin informasi pengiriman pada pesanan.
+3.  Buka SmartPrint, klik tombol **"Tempel Data Marketplace"**.
+4.  Pilih ukuran kertas (58/80/100mm) dan klik **Cetak**.
+
+### Metode 2: Direct Share (Profesional)
+1.  Pada tampilan "Cetak PDF" di marketplace, klik **Share/Bagikan**.
+2.  Pilih ikon **SmartPrint**.
+3.  Resi akan terpotong (crop) otomatis. Klik **Cetak**.
 
 ---
-*Dibuat dengan ❤️ oleh [Nama Kamu]*
+
+## 📝 Catatan Teknis
+* **Printer:** Mendukung hampir semua printer thermal Bluetooth & USB (ESC/POS).
+* **Browser:** Sangat disarankan menggunakan **Google Chrome** karena mendukung Web Bluetooth API secara penuh.
+
+---
+Dibuat untuk membantu seller UMKM agar proses packing lebih efisien! 📦⚡
