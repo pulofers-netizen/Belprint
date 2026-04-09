@@ -1,0 +1,7 @@
+# Ignore API Keys
+config.json
+.env
+
+# Ignore system files
+.DS_Store
+node_modules/
